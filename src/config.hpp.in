@@ -1,0 +1,26 @@
+#ifndef CRASY_CONFIG_HPP
+#define CRASY_CONFIG_HPP
+
+/// defined if crasy built as a static library
+#cmakedefine CRASY_STATIC
+
+// defined if crasy built with SSL/TLS support
+#cmakedefine CRASY_HAS_SSL
+
+#ifndef CRASY_STATIC
+#define ASIO_DYN_LINK
+#else
+#define ASIO_SEPARATE_COMPILATION
+#endif
+
+#if !defined(CRASY_STATIC) && defined(_WIN32)
+#ifdef CRASY_EXPORT
+#define CRASY_API __declspec(dllexport)
+#else
+#define CRASY_API __declspec(dllimport)
+#endif
+#else
+#define CRASY_API
+#endif
+
+#endif
