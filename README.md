@@ -14,6 +14,8 @@ separate thread pool.
 
 See the `examples` directory for simple example applications.
 
+[API Documentation](https://vociferix.github.io/docs/crasy/)
+
 ## Compiler Support
 
 At this stage, GCC 10.3 is the only compiler that this library has been
