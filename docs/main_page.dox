@@ -1,0 +1,52 @@
+/// @defgroup spawn_grp Task Spawning
+/// @defgroup sync_grp Synchronization
+/// @defgroup sleep_grp Timed Sleep
+
+/// @mainpage Crasy - CoRoutine ASYnc
+///
+/// Crasy is a C++ async I/O library built on top of ASIO and
+/// based around C++20 coroutines. Additionally, Crasy is inspired
+/// by Rust's popular Tokio library. The intent is to enable
+/// developers to create "web scale" C++ applications while
+/// writing straight-line code.
+///
+/// @section intro_sec Introduction
+///
+/// Crasy's two core types are @ref crasy::executor "executor" and
+/// @ref crasy::future "future". @ref crasy::executor "executor"
+/// encapsulates the complete async runtime of Crasy, and
+/// @ref crasy::future "future" is the main building block of
+/// async coroutines that hook into Crasy's runtime. The bare
+/// minimum for a Crasy application is as follows:
+///
+/// ```cpp
+/// #include <crasy/crasy.hpp>
+///
+/// crasy::future<int> async_main() {
+///     co_return 0;
+/// }
+///
+/// int main() {
+///     return crasy::executor().block_on(async_main);
+/// }
+/// ```
+///
+/// From here, a Crasy application consists of calls into various
+/// async @ref io_sec "I/O interfaces" and
+/// @ref task_mgmt_sec "task management utilities".
+///
+/// @section io_sec Async I/O Interfaces
+///
+/// @li @ref crasy::udp_socket "udp_socket"
+///
+/// @section task_mgmt_sec Task Management Utilities
+///
+/// @li @ref spawn_grp
+/// @li @ref sync_grp
+/// @li @ref sleep_grp
+///
+/// @section misc_sec Miscellaneous Utilities
+/// @li @ref crasy::future "future"
+/// @li @ref crasy::stream "stream"
+/// @li @ref crasy::option "option"
+/// @li @ref crasy::result "result"

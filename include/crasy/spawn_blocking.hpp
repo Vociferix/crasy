@@ -259,6 +259,8 @@ class blocking_join_handle<void> {
         F&&);
 };
 
+/// @brief Spawns a new blocking task
+/// @ingroup spawn_grp
 template <typename F>
 blocking_join_handle<decltype(std::declval<F>()())> spawn_blocking(F&& func) {
     using ret_t = decltype(func());

@@ -38,6 +38,7 @@ class CRASY_API shared_mutex_lock_shared_future {
     shared_mutex* mtx_;
 };
 
+/// @ingroup sync_grp
 class CRASY_API shared_mutex {
   public:
     shared_mutex() = default;

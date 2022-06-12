@@ -305,6 +305,8 @@ class join_handle {
     friend join_handle<U> spawn(future<U> fut);
 };
 
+/// @brief Spawns a new async task
+/// @ingroup spawn_grp
 template <typename T>
 join_handle<T> spawn(future<T> fut) {
     return join_handle<T>{[](future<T> f) -> detail::join_handle_impl<T> {
@@ -317,6 +319,8 @@ join_handle<T> spawn(future<T> fut) {
     }(std::move(fut))};
 }
 
+/// @brief Spawns a new async task
+/// @ingroup spawn_grp
 template <typename F>
 auto spawn(F&& func) {
     static constexpr auto is_async = requires(decltype(func()) ret) {

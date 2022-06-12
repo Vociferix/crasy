@@ -67,12 +67,14 @@ class sleep_future {
     friend sleep_future<C> sleep_until(const std::chrono::time_point<C, D>&);
 };
 
+/// @ingroup sleep_grp
 template <typename Rep, typename Period>
 sleep_future<std::chrono::high_resolution_clock> sleep_for(
     const std::chrono::duration<Rep, Period>& timeout) {
     return sleep_future<std::chrono::high_resolution_clock>{timeout};
 }
 
+/// @ingroup sleep_grp
 template <typename Clock, typename Dur>
 sleep_future<Clock> sleep_until(
     const std::chrono::time_point<Clock, Dur>& timeout) {

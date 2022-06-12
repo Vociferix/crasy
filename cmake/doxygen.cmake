@@ -13,6 +13,6 @@ if(TOP_LEVEL_PROJECT)
             "${doxygen_awesome_css_SOURCE_DIR}/doxygen-awesome-sidebar-only.css"
         )
         set(DOXYGEN_EXCLUDE_SYMBOLS detail)
-        doxygen_add_docs(docs include "${OUTPUT_INCLUDEDIR}")
+        doxygen_add_docs(docs include "${OUTPUT_INCLUDEDIR}" docs)
     endif()
 endif()

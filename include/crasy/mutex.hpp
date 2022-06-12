@@ -26,6 +26,7 @@ class CRASY_API mutex_lock_future {
     mutex* mtx_;
 };
 
+/// @ingroup sync_grp
 class CRASY_API mutex {
   public:
     mutex() = default;

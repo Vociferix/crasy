@@ -52,6 +52,7 @@ class condition_variable_wait_future
     option<awaiter> awaiter_;
 };
 
+/// @ingroup sync_grp
 class CRASY_API condition_variable {
   public:
     condition_variable() = default;

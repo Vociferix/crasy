@@ -15,6 +15,7 @@ class lock_guard;
 template <typename Mutex>
 future<lock_guard<Mutex>> lock(Mutex& mtx);
 
+/// @ingroup sync_grp
 template <typename Mutex>
 class lock_guard {
   public:
@@ -42,6 +43,7 @@ class lock_guard {
     friend future<lock_guard<M>> lock(M&);
 };
 
+/// @ingroup sync_grp
 template <typename Mutex>
 future<lock_guard<Mutex>> lock(Mutex& mtx) {
     co_await mtx.lock();

@@ -15,6 +15,7 @@ class unique_lock;
 template <typename Mutex>
 future<unique_lock<Mutex>> lock_unique(Mutex& mtx);
 
+/// @ingroup sync_grp
 template <typename Mutex>
 class unique_lock {
   public:
@@ -59,6 +60,7 @@ class unique_lock {
     friend future<unique_lock<M>> lock_unique(M&);
 };
 
+/// @ingroup sync_grp
 template <typename Mutex>
 future<unique_lock<Mutex>> lock_unique(Mutex& mtx) {
     co_await mtx.lock();
