@@ -53,7 +53,7 @@ class stream {
         bool done_{false};
 
         template <typename>
-        friend class future;
+        friend class stream;
     };
 
     explicit stream(std::coroutine_handle<promise_type> handle)
@@ -99,7 +99,7 @@ class stream {
     }
 
     template <typename F>
-    future<void> foreach (F&& func) {
+    future<void> for_each(F&& func) {
         static constexpr bool is_cr = requires(F && f, option<T> v) {
             co_await f(*std::move(v));
         };
