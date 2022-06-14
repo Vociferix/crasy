@@ -25,11 +25,13 @@ add_library(crasy ${LIBTYPE}
     "${HEADER_DIR}/endpoint.hpp"
     "${HEADER_DIR}/executor.hpp"
     "${HEADER_DIR}/future.hpp"
+    "${HEADER_DIR}/io_future.hpp"
     "${HEADER_DIR}/ip_address.hpp"
     "${HEADER_DIR}/lfqueue.hpp"
     "${HEADER_DIR}/lock_guard.hpp"
     "${HEADER_DIR}/mutex.hpp"
     "${HEADER_DIR}/option.hpp"
+    "${HEADER_DIR}/resolve.hpp"
     "${HEADER_DIR}/shared_mutex.hpp"
     "${HEADER_DIR}/sleep.hpp"
     "${HEADER_DIR}/spawn.hpp"
@@ -42,8 +44,10 @@ add_library(crasy ${LIBTYPE}
     asio.cpp
     condition_variable.cpp
     executor.cpp
+    io_future.cpp
     ip_address.cpp
     mutex.cpp
+    resolve.cpp
     shared_mutex.cpp
     udp.cpp
     utils.cpp

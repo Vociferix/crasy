@@ -1,6 +1,7 @@
 /// @defgroup spawn_grp Task Spawning
 /// @defgroup sync_grp Synchronization
 /// @defgroup sleep_grp Timed Sleep
+/// @defgroup resolve_grp Name Resolution
 
 /// @mainpage Crasy - CoRoutine ASYnc
 ///
@@ -37,7 +38,8 @@
 ///
 /// @section io_sec Async I/O Interfaces
 ///
-/// @li @ref crasy::udp_socket "udp_socket"
+/// @li @ref resolve_grp
+/// @li @ref crasy::udp_socket "UDP Socket"
 ///
 /// @section task_mgmt_sec Task Management Utilities
 ///

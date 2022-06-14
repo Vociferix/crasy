@@ -1,3 +1,4 @@
+#include <crasy/io_future.hpp>
 #include <crasy/spawn_blocking.hpp>
 #include <crasy/udp.hpp>
 #include "internal.hpp"
@@ -28,37 +29,22 @@ future<result<void>> udp_socket::bind_local(const endpoint& local_endpoint) {
     });
 }
 
-struct connect_future {
-    option<result<void>> ret_{};
-    std::coroutine_handle<> suspended_{};
+struct connect_future : public detail::io_future {
+    option<result<void>> ret;
 
     void start(asio::ip::udp::socket& socket,
                const asio::ip::udp::endpoint& ep) {
         socket.async_connect(ep, [this](const auto& ec) {
             if (ec) {
-                ret_.emplace(err(ec));
+                ret.emplace(err(ec));
             } else {
-                ret_.emplace(ok());
+                ret.emplace(ok());
             }
-            if (suspended_) {
-                auto suspended = suspended_;
-                suspended_ = std::coroutine_handle<>();
-                detail::schedule_task(suspended);
-            }
+            this->finish();
         });
     }
 
-    bool await_ready() { return ret_.has_value(); }
-
-    void await_suspend(std::coroutine_handle<> suspended) {
-        if (ret_.has_value()) {
-            detail::schedule_task(suspended);
-        } else {
-            suspended_ = suspended;
-        }
-    }
-
-    void await_resume() {}
+    result<void> await_resume() { return *std::move(ret); }
 };
 
 static future<result<void>> ensure_open(asio::ip::udp::socket& sock,
@@ -80,8 +66,7 @@ future<result<void>> udp_socket::bind_remote(const endpoint& remote_endpoint) {
     auto ret = co_await ensure_open(sock_, remote_endpoint.address().is_v4());
     if (ret.is_err()) { co_return ret; }
     fut.start(sock_, ep);
-    co_await fut;
-    co_return *std::move(fut.ret_);
+    co_return co_await fut;
 }
 
 option<const endpoint&> udp_socket::local_endpoint() const {
@@ -92,59 +77,41 @@ option<const endpoint&> udp_socket::remote_endpoint() const {
     return remote_.map([](const auto& ep) -> const endpoint& { return ep; });
 }
 
-struct send_future {
-    option<result<std::size_t>> ret_{};
-    std::coroutine_handle<> suspended_{};
+struct send_future : public detail::io_future {
+    option<result<std::size_t>> ret;
 
     template <typename T>
     void start(asio::ip::udp::socket& socket, std::span<const T> buffer) {
         socket.async_send(asio_buffer(buffer),
                           [this](const auto& ec, auto cnt) {
                               if (ec) {
-                                  ret_.emplace(err(ec));
+                                  ret.emplace(err(ec));
                               } else {
-                                  ret_.emplace(ok(cnt));
+                                  ret.emplace(ok(cnt));
                               }
-                              if (suspended_) {
-                                  auto suspended = suspended_;
-                                  suspended_ = std::coroutine_handle<>();
-                                  detail::schedule_task(suspended);
-                              }
+                              this->finish();
                           });
     }
 
-    bool await_ready() { return ret_.has_value(); }
-
-    void await_suspend(std::coroutine_handle<> suspended) {
-        if (ret_.has_value()) {
-            detail::schedule_task(suspended);
-        } else {
-            suspended_ = suspended;
-        }
-    }
-
-    void await_resume() {}
+    result<std::size_t> await_resume() { return *std::move(ret); }
 };
 
 future<result<std::size_t>> udp_socket::send(
     std::span<const unsigned char> buffer) {
     send_future fut{};
     fut.start(sock_, buffer);
-    co_await fut;
-    co_return *std::move(fut.ret_);
+    co_return co_await fut;
 }
 
 future<result<std::size_t>> udp_socket::send(
     std::span<const std::byte> buffer) {
     send_future fut{};
     fut.start(sock_, buffer);
-    co_await fut;
-    co_return *std::move(fut.ret_);
+    co_return co_await fut;
 }
 
-struct send_to_future {
-    option<result<std::size_t>> ret_{};
-    std::coroutine_handle<> suspended_{};
+struct send_to_future : public detail::io_future {
+    option<result<std::size_t>> ret;
 
     template <typename T>
     void start(asio::ip::udp::socket& socket,
@@ -153,29 +120,15 @@ struct send_to_future {
         socket.async_send_to(asio_buffer(buffer), peer,
                              [this](const auto& ec, auto cnt) {
                                  if (ec) {
-                                     ret_.emplace(err(ec));
+                                     ret.emplace(err(ec));
                                  } else {
-                                     ret_.emplace(ok(cnt));
+                                     ret.emplace(ok(cnt));
                                  }
-                                 if (suspended_) {
-                                     auto suspended = suspended_;
-                                     suspended_ = std::coroutine_handle<>();
-                                     detail::schedule_task(suspended);
-                                 }
+                                 this->finish();
                              });
     }
 
-    bool await_ready() { return ret_.has_value(); }
-
-    void await_suspend(std::coroutine_handle<> suspended) {
-        if (ret_.has_value()) {
-            detail::schedule_task(suspended);
-        } else {
-            suspended_ = suspended;
-        }
-    }
-
-    void await_resume() {}
+    result<std::size_t> await_resume() { return *std::move(ret); }
 };
 
 future<result<std::size_t>> udp_socket::send_to(
@@ -186,8 +139,7 @@ future<result<std::size_t>> udp_socket::send_to(
     auto ret = co_await ensure_open(sock_, peer.address().is_v4());
     if (ret.is_err()) { co_return std::move(ret).propagate(); }
     fut.start(sock_, buffer, ep);
-    co_await fut;
-    co_return *std::move(fut.ret_);
+    co_return co_await fut;
 }
 
 future<result<std::size_t>> udp_socket::send_to(
@@ -198,118 +150,100 @@ future<result<std::size_t>> udp_socket::send_to(
     auto ret = co_await ensure_open(sock_, peer.address().is_v4());
     if (ret.is_err()) { co_return std::move(ret).propagate(); }
     fut.start(sock_, buffer, ep);
-    co_await fut;
-    co_return *std::move(fut.ret_);
+    co_return co_await fut;
 }
 
-struct recv_future {
-    option<result<std::size_t>> ret_{};
-    std::coroutine_handle<> suspended_{};
+struct recv_future : public detail::io_future {
+    option<result<std::size_t>> ret;
 
     template <typename T>
     void start(asio::ip::udp::socket& socket, std::span<T> buffer) {
         socket.async_receive(asio_buffer(buffer),
                              [this](const auto& ec, auto cnt) {
                                  if (ec) {
-                                     ret_.emplace(err(ec));
+                                     ret.emplace(err(ec));
                                  } else {
-                                     ret_.emplace(ok(cnt));
+                                     ret.emplace(ok(cnt));
                                  }
-                                 if (suspended_) {
-                                     auto suspended = suspended_;
-                                     suspended_ = std::coroutine_handle<>();
-                                     detail::schedule_task(suspended);
-                                 }
+                                 this->finish();
                              });
     }
 
-    bool await_ready() { return ret_.has_value(); }
-
-    void await_suspend(std::coroutine_handle<> suspended) {
-        if (ret_.has_value()) {
-            detail::schedule_task(suspended);
-        } else {
-            suspended_ = suspended;
-        }
-    }
-
-    void await_resume() {}
+    result<std::size_t> await_resume() { return *std::move(ret); }
 };
 
 future<result<std::size_t>> udp_socket::recv(std::span<unsigned char> buffer) {
     recv_future fut{};
     fut.start(sock_, buffer);
-    co_await fut;
-    co_return *std::move(fut.ret_);
+    co_return co_await fut;
 }
 
 future<result<std::size_t>> udp_socket::recv(std::span<std::byte> buffer) {
     recv_future fut{};
     fut.start(sock_, buffer);
-    co_await fut;
-    co_return *std::move(fut.ret_);
+    co_return co_await fut;
 }
 
-struct recv_from_future {
-    asio::ip::udp::endpoint& asio_ep_;
-    option<result<std::size_t>> ret_{};
-    std::coroutine_handle<> suspended_{};
+struct recv_from_future : public detail::io_future {
+    option<result<std::size_t>> ret;
 
     template <typename T>
-    void start(asio::ip::udp::socket& socket, std::span<T> buffer) {
-        socket.async_receive_from(
-            asio_buffer(buffer), asio_ep_, [this](const auto& ec, auto cnt) {
-                if (ec) {
-                    ret_.emplace(err(ec));
-                } else {
-                    ret_.emplace(ok(cnt));
-                }
-                if (suspended_) {
-                    auto suspended = suspended_;
-                    suspended_ = std::coroutine_handle<>();
-                    detail::schedule_task(suspended);
-                }
-            });
+    void start(asio::ip::udp::socket& socket,
+               std::span<T> buffer,
+               asio::ip::udp::endpoint& asio_ep) {
+        socket.async_receive_from(asio_buffer(buffer), asio_ep,
+                                  [this](const auto& ec, auto cnt) {
+                                      if (ec) {
+                                          ret.emplace(err(ec));
+                                      } else {
+                                          ret.emplace(ok(cnt));
+                                      }
+                                      this->finish();
+                                  });
     }
 
-    bool await_ready() { return ret_.has_value(); }
-
-    void await_suspend(std::coroutine_handle<> suspended) {
-        if (ret_.has_value()) {
-            detail::schedule_task(suspended);
-        } else {
-            suspended_ = suspended;
-        }
-    }
-
-    void await_resume() {}
+    result<std::size_t> await_resume() { return *std::move(ret); }
 };
+
+future<result<std::size_t>> recv_from_impl(asio::ip::udp::socket& sock,
+                                           std::span<unsigned char> buffer,
+                                           asio::ip::udp::endpoint& peer) {
+    recv_from_future fut{};
+    fut.start(sock, buffer, peer);
+    co_return co_await fut;
+}
 
 future<result<std::size_t>> udp_socket::recv_from(
     std::span<unsigned char> buffer,
     endpoint& peer) {
-    asio::ip::udp::endpoint ep{peer.address().asio_address(), peer.port()};
-    recv_from_future fut{ep};
     auto ret = co_await ensure_open(sock_, peer.address().is_v4());
     if (ret.is_err()) { co_return std::move(ret).propagate(); }
-    fut.start(sock_, buffer);
-    co_await fut;
+
+    asio::ip::udp::endpoint ep{peer.address().asio_address(), peer.port()};
+    auto res = co_await recv_from_impl(sock_, buffer, ep);
     peer.address() = ip_address(ep.address());
     peer.port() = ep.port();
-    co_return *std::move(fut.ret_);
+    co_return res;
+}
+
+future<result<std::size_t>> recv_from_impl(asio::ip::udp::socket& sock,
+                                           std::span<std::byte> buffer,
+                                           asio::ip::udp::endpoint& peer) {
+    recv_from_future fut{};
+    fut.start(sock, buffer, peer);
+    co_return co_await fut;
 }
 
 future<result<std::size_t>> udp_socket::recv_from(std::span<std::byte> buffer,
                                                   endpoint& peer) {
-    asio::ip::udp::endpoint ep{peer.address().asio_address(), peer.port()};
-    recv_from_future fut{ep};
     auto ret = co_await ensure_open(sock_, peer.address().is_v4());
     if (ret.is_err()) { co_return std::move(ret).propagate(); }
-    fut.start(sock_, buffer);
-    co_await fut;
+
+    asio::ip::udp::endpoint ep{peer.address().asio_address(), peer.port()};
+    auto res = co_await recv_from_impl(sock_, buffer, ep);
     peer.address() = ip_address(ep.address());
     peer.port() = ep.port();
-    co_return *std::move(fut.ret_);
+    co_return res;
 }
 
 } // namespace crasy
