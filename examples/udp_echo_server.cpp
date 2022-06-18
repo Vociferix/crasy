@@ -39,8 +39,22 @@ crasy::future<int> async_main() {
     for (;;) {
         remote_endpoint = crasy::endpoint(); // Reset remote endpoint
 
-        // Wait to receive a packet
-        check_result(co_await listen_socket.recv_from(recv_buffer, remote_endpoint));
+        // Wait to receive data on the UDP socket
+        if (!check_result(co_await listen_socket.wait_read())) {
+            co_return 1;
+        }
+
+        // Get the size of the received data and allocate enough space for it
+        auto size = check_result(listen_socket.available());
+        if (!size) {
+            co_return 1;
+        }
+        recv_buffer.resize(*size);
+
+        // Read the data from the UDP socket
+        if (!check_result(co_await listen_socket.recv_from(recv_buffer, remote_endpoint))) {
+            co_return 1;
+        }
 
         // Spawn a new async task to respond - While this task is working
         // on sending the reponse, we can go back to listening for new

@@ -40,6 +40,11 @@ class CRASY_API udp_socket {
     option<const endpoint&> local_endpoint() const;
     option<const endpoint&> remote_endpoint() const;
 
+    future<result<void>> wait_read();
+    future<result<void>> wait_write();
+
+    result<std::size_t> available() const;
+
     future<result<std::size_t>> send(std::span<const unsigned char> buffer);
     future<result<std::size_t>> send(std::span<const std::byte> buffer);
     future<result<std::size_t>> send(std::span<const char> buffer);
@@ -61,11 +66,6 @@ class CRASY_API udp_socket {
                                           endpoint& peer);
     future<result<std::size_t>> recv_from(std::span<char> buffer,
                                           endpoint& peer);
-
-    future<result<void>> wait_read();
-    future<result<void>> wait_write();
-
-    result<std::size_t> available() const;
 
     future<result<std::size_t>> recv(dynamic_buffer auto& buffer) {
         auto tmp = co_await wait_read();
