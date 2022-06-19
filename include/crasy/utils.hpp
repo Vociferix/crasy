@@ -7,6 +7,8 @@
 
 #include <crasy/result.hpp>
 
+#include <span>
+
 namespace crasy {
 
 CRASY_API result<std::size_t> available_cpu_cores();
@@ -19,10 +21,13 @@ concept byte_like_pointer =
     std::is_pointer_v<T> && byte_like<std::remove_pointer_t<T>>;
 
 template <typename T>
-concept dynamic_buffer = requires(T buf) {
-    { std::size(buf) } -> std::convertible_to<std::size_t>;
-    { std::data(buf) } -> byte_like_pointer;
-    buf.resize(std::declval<std::size_t>());
+concept buffer = requires(T& buf) {
+    { std::as_bytes(std::span(buf)) } -> std::same_as<std::span<std::byte>>;
+}
+&&requires(const T& buf) {
+    {
+        std::as_bytes(std::span(buf))
+        } -> std::convertible_to<std::span<const std::byte>>;
 };
 
 } // namespace crasy

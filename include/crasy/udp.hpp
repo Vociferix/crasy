@@ -45,55 +45,33 @@ class CRASY_API udp_socket {
 
     result<std::size_t> available() const;
 
-    future<result<std::size_t>> send(std::span<const unsigned char> buffer);
-    future<result<std::size_t>> send(std::span<const std::byte> buffer);
-    future<result<std::size_t>> send(std::span<const char> buffer);
+    future<result<std::size_t>> send(std::span<const std::byte> buf);
 
-    future<result<std::size_t>> send_to(std::span<const unsigned char> buffer,
-                                        const endpoint& peer);
-    future<result<std::size_t>> send_to(std::span<const std::byte> buffer,
-                                        const endpoint& peer);
-    future<result<std::size_t>> send_to(std::span<const char> buffer,
-                                        const endpoint& peer);
-
-    future<result<std::size_t>> recv(std::span<unsigned char> buffer);
-    future<result<std::size_t>> recv(std::span<std::byte> buffer);
-    future<result<std::size_t>> recv(std::span<char> buffer);
-
-    future<result<std::size_t>> recv_from(std::span<unsigned char> buffer,
-                                          endpoint& peer);
-    future<result<std::size_t>> recv_from(std::span<std::byte> buffer,
-                                          endpoint& peer);
-    future<result<std::size_t>> recv_from(std::span<char> buffer,
-                                          endpoint& peer);
-
-    future<result<std::size_t>> recv(dynamic_buffer auto& buffer) {
-        auto tmp = co_await wait_read();
-        if (tmp.is_err()) { co_return std::move(tmp).propagate(); }
-
-        auto size_res = available();
-        if (size_res.is_err()) { co_return std::move(tmp).propagate(); }
-        auto size = *size_res;
-
-        buffer.resize(size);
-        co_return co_await recv(
-            std::span{std::data(buffer), std::size(buffer)});
+    future<result<std::size_t>> send(buffer auto const& buf) {
+        return send(std::span<const std::byte>(std::as_bytes(std::span(buf))));
     }
 
-    future<result<std::size_t>> recv_from(dynamic_buffer auto& buffer,
-                                          endpoint& peer) {
-        auto tmp = co_await ensure_open(peer.address().is_v4());
-        if (tmp.is_err()) { co_return std::move(tmp).propagate(); }
-        co_await wait_read();
-        if (tmp.is_err()) { co_return std::move(tmp).propagate(); }
+    future<result<std::size_t>> send_to(std::span<const std::byte> buf,
+                                        const endpoint& peer);
 
-        auto size_res = available();
-        if (size_res.is_err()) { co_return std::move(tmp).propagate(); }
-        auto size = *size_res;
+    future<result<std::size_t>> send_to(buffer auto const& buf,
+                                        const endpoint& peer) {
+        return send_to(
+            std::span<const std::byte>(std::as_bytes(std::span(buf))), peer);
+    }
 
-        buffer.resize(size);
-        co_return co_await recv_from(
-            std::span{std::data(buffer), std::size(buffer)}, peer);
+    future<result<std::size_t>> recv(std::span<std::byte> buf);
+
+    future<result<std::size_t>> recv(buffer auto& buf) {
+        return recv(std::span<std::byte>(std::as_bytes(std::span(buf))));
+    }
+
+    future<result<std::size_t>> recv_from(std::span<std::byte> buf,
+                                          endpoint& peer);
+
+    future<result<std::size_t>> recv_from(buffer auto& buf, endpoint& peer) {
+        return recv_from(std::span<std::byte>(std::as_bytes(std::span(buf))),
+                         peer);
     }
 
   private:

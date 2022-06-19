@@ -96,20 +96,7 @@ struct send_future : public detail::io_future {
 };
 
 future<result<std::size_t>> udp_socket::send(
-    std::span<const unsigned char> buffer) {
-    send_future fut{};
-    fut.start(sock_, buffer);
-    co_return co_await fut;
-}
-
-future<result<std::size_t>> udp_socket::send(
     std::span<const std::byte> buffer) {
-    send_future fut{};
-    fut.start(sock_, buffer);
-    co_return co_await fut;
-}
-
-future<result<std::size_t>> udp_socket::send(std::span<const char> buffer) {
     send_future fut{};
     fut.start(sock_, buffer);
     co_return co_await fut;
@@ -137,29 +124,8 @@ struct send_to_future : public detail::io_future {
 };
 
 future<result<std::size_t>> udp_socket::send_to(
-    std::span<const unsigned char> buffer,
-    const endpoint& peer) {
-    send_to_future fut{};
-    asio::ip::udp::endpoint ep(peer.address().asio_address(), peer.port());
-    auto ret = co_await ensure_open(peer.address().is_v4());
-    if (ret.is_err()) { co_return std::move(ret).propagate(); }
-    fut.start(sock_, buffer, ep);
-    co_return co_await fut;
-}
-
-future<result<std::size_t>> udp_socket::send_to(
     std::span<const std::byte> buffer,
     const endpoint& peer) {
-    send_to_future fut{};
-    asio::ip::udp::endpoint ep(peer.address().asio_address(), peer.port());
-    auto ret = co_await ensure_open(peer.address().is_v4());
-    if (ret.is_err()) { co_return std::move(ret).propagate(); }
-    fut.start(sock_, buffer, ep);
-    co_return co_await fut;
-}
-
-future<result<std::size_t>> udp_socket::send_to(std::span<const char> buffer,
-                                                const endpoint& peer) {
     send_to_future fut{};
     asio::ip::udp::endpoint ep(peer.address().asio_address(), peer.port());
     auto ret = co_await ensure_open(peer.address().is_v4());
@@ -187,19 +153,7 @@ struct recv_future : public detail::io_future {
     result<std::size_t> await_resume() { return *std::move(ret); }
 };
 
-future<result<std::size_t>> udp_socket::recv(std::span<unsigned char> buffer) {
-    recv_future fut{};
-    fut.start(sock_, buffer);
-    co_return co_await fut;
-}
-
 future<result<std::size_t>> udp_socket::recv(std::span<std::byte> buffer) {
-    recv_future fut{};
-    fut.start(sock_, buffer);
-    co_return co_await fut;
-}
-
-future<result<std::size_t>> udp_socket::recv(std::span<char> buffer) {
     recv_future fut{};
     fut.start(sock_, buffer);
     co_return co_await fut;
@@ -227,27 +181,6 @@ struct recv_from_future : public detail::io_future {
 };
 
 future<result<std::size_t>> recv_from_impl(asio::ip::udp::socket& sock,
-                                           std::span<unsigned char> buffer,
-                                           asio::ip::udp::endpoint& peer) {
-    recv_from_future fut{};
-    fut.start(sock, buffer, peer);
-    co_return co_await fut;
-}
-
-future<result<std::size_t>> udp_socket::recv_from(
-    std::span<unsigned char> buffer,
-    endpoint& peer) {
-    auto ret = co_await ensure_open(peer.address().is_v4());
-    if (ret.is_err()) { co_return std::move(ret).propagate(); }
-
-    asio::ip::udp::endpoint ep{peer.address().asio_address(), peer.port()};
-    auto res = co_await recv_from_impl(sock_, buffer, ep);
-    peer.address() = ip_address(ep.address());
-    peer.port() = ep.port();
-    co_return res;
-}
-
-future<result<std::size_t>> recv_from_impl(asio::ip::udp::socket& sock,
                                            std::span<std::byte> buffer,
                                            asio::ip::udp::endpoint& peer) {
     recv_from_future fut{};
@@ -256,26 +189,6 @@ future<result<std::size_t>> recv_from_impl(asio::ip::udp::socket& sock,
 }
 
 future<result<std::size_t>> udp_socket::recv_from(std::span<std::byte> buffer,
-                                                  endpoint& peer) {
-    auto ret = co_await ensure_open(peer.address().is_v4());
-    if (ret.is_err()) { co_return std::move(ret).propagate(); }
-
-    asio::ip::udp::endpoint ep{peer.address().asio_address(), peer.port()};
-    auto res = co_await recv_from_impl(sock_, buffer, ep);
-    peer.address() = ip_address(ep.address());
-    peer.port() = ep.port();
-    co_return res;
-}
-
-future<result<std::size_t>> recv_from_impl(asio::ip::udp::socket& sock,
-                                           std::span<char> buffer,
-                                           asio::ip::udp::endpoint& peer) {
-    recv_from_future fut{};
-    fut.start(sock, buffer, peer);
-    co_return co_await fut;
-}
-
-future<result<std::size_t>> udp_socket::recv_from(std::span<char> buffer,
                                                   endpoint& peer) {
     auto ret = co_await ensure_open(peer.address().is_v4());
     if (ret.is_err()) { co_return std::move(ret).propagate(); }
